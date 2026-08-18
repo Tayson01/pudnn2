@@ -37,11 +37,11 @@ export function CoverageMapSection() {
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {stats.map((s) => (
             <div
               key={s.label}
-              className="rounded-2xl border border-border bg-card px-4 py-3 text-center shadow-card/40"
+              className="shrink-0 rounded-2xl border border-border bg-card px-4 py-3 text-center shadow-card/40"
             >
               <s.icon className="mx-auto size-4 text-brand" />
               <p className="mt-1.5 text-lg font-extrabold leading-none">{s.value}</p>
@@ -52,18 +52,18 @@ export function CoverageMapSection() {
       </div>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <div className="group relative rounded-[28px] bg-gradient-to-br from-brand/40 via-brand/10 to-transparent p-[1.5px] shadow-card">
-          <div className="relative overflow-hidden rounded-[26px] border border-border/60 bg-card">
+        <div className="group relative -mx-5 rounded-[28px] bg-gradient-to-br from-brand/40 via-brand/10 to-transparent p-0 shadow-card sm:mx-0 sm:p-[1.5px]">
+          <div className="relative overflow-hidden border-border/60 bg-card sm:rounded-[26px] sm:border">
             {mounted ? (
               <Suspense
-                fallback={<div className="h-[540px] w-full animate-pulse bg-surface" aria-hidden="true" />}
+                fallback={<div className="h-[68svh] min-h-[460px] w-full animate-pulse bg-surface sm:h-[560px]" aria-hidden="true" />}
               >
                 <div className="[&_.leaflet-container]:transition-[filter] dark:[&_.leaflet-container]:brightness-[.9] dark:[&_.leaflet-container]:contrast-[1.03]">
                   <CoverageMap />
                 </div>
               </Suspense>
             ) : (
-              <div className="h-[540px] w-full bg-surface" aria-hidden="true" />
+              <div className="h-[68svh] min-h-[460px] w-full bg-surface sm:h-[560px]" aria-hidden="true" />
             )}
 
           </div>

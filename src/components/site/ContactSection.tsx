@@ -92,7 +92,7 @@ export function ContactSection() {
               Completezi în 20 de secunde, se deschide direct în WhatsApp.
             </p>
             <div className="mt-5">
-              <ContactForm />
+              <ContactForm bare />
             </div>
           </div>
         </div>

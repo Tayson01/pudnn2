@@ -3,7 +3,13 @@ import { MapPin, MessageCircle } from "lucide-react";
 
 import { PHONE, waLink, zones } from "@/lib/site-data";
 
-export function ContactForm({ defaultZone }: { defaultZone?: string }) {
+export function ContactForm({
+  defaultZone,
+  bare = false,
+}: {
+  defaultZone?: string;
+  bare?: boolean;
+}) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [zone, setZone] = useState(defaultZone ?? zones[0]?.name ?? "Constanța");
@@ -61,7 +67,7 @@ export function ContactForm({ defaultZone }: { defaultZone?: string }) {
         e.preventDefault();
         sendWithLocation();
       }}
-      className=""
+      className={bare ? "" : "rounded-3xl border border-border bg-card p-5 shadow-card sm:p-6"}
     >
       <div className="grid gap-3.5 sm:grid-cols-2">
         <label className="block text-xs font-semibold text-muted-foreground">

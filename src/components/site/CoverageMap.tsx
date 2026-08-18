@@ -292,7 +292,6 @@ export default function CoverageMap() {
           maxZoom={17}
           scrollWheelZoom={false}
           zoomControl={false}
-          attributionControl={false}
           className="vm-map h-full w-full"
           style={{ background: "transparent" }}
         >

@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as IntrebariFrecventeRouteImport } from './routes/intrebari-frecvente'
+import { Route as ServiciiIndexRouteImport } from './routes/servicii.index'
+import { Route as ServiciiSlugRouteImport } from './routes/servicii.$slug'
+import { Route as ZoneIndexRouteImport } from './routes/zone.index'
+import { Route as ZoneSlugRouteImport } from './routes/zone.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntrebariFrecventeRoute = IntrebariFrecventeRouteImport.update({
+  id: '/intrebari-frecvente',
+  path: '/intrebari-frecvente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiciiIndexRoute = ServiciiIndexRouteImport.update({
+  id: '/servicii/',
+  path: '/servicii/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiciiSlugRoute = ServiciiSlugRouteImport.update({
+  id: '/servicii/$slug',
+  path: '/servicii/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZoneIndexRoute = ZoneIndexRouteImport.update({
+  id: '/zone/',
+  path: '/zone/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZoneSlugRoute = ZoneSlugRouteImport.update({
+  id: '/zone/$slug',
+  path: '/zone/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
+  '/intrebari-frecvente': typeof IntrebariFrecventeRoute
+  '/servicii/$slug': typeof ServiciiSlugRoute
+  '/zone/$slug': typeof ZoneSlugRoute
+  '/servicii/': typeof ServiciiIndexRoute
+  '/zone/': typeof ZoneIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
+  '/intrebari-frecvente': typeof IntrebariFrecventeRoute
+  '/servicii/$slug': typeof ServiciiSlugRoute
+  '/zone/$slug': typeof ZoneSlugRoute
+  '/servicii': typeof ServiciiIndexRoute
+  '/zone': typeof ZoneIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
+  '/intrebari-frecvente': typeof IntrebariFrecventeRoute
+  '/servicii/$slug': typeof ServiciiSlugRoute
+  '/zone/$slug': typeof ZoneSlugRoute
+  '/servicii/': typeof ServiciiIndexRoute
+  '/zone/': typeof ZoneIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/contact'
+    | '/intrebari-frecvente'
+    | '/servicii/$slug'
+    | '/zone/$slug'
+    | '/servicii/'
+    | '/zone/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/contact'
+    | '/intrebari-frecvente'
+    | '/servicii/$slug'
+    | '/zone/$slug'
+    | '/servicii'
+    | '/zone'
+  id:
+    | '__root__'
+    | '/'
+    | '/contact'
+    | '/intrebari-frecvente'
+    | '/servicii/$slug'
+    | '/zone/$slug'
+    | '/servicii/'
+    | '/zone/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContactRoute: typeof ContactRoute
+  IntrebariFrecventeRoute: typeof IntrebariFrecventeRoute
+  ServiciiSlugRoute: typeof ServiciiSlugRoute
+  ZoneSlugRoute: typeof ZoneSlugRoute
+  ServiciiIndexRoute: typeof ServiciiIndexRoute
+  ZoneIndexRoute: typeof ZoneIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/intrebari-frecvente': {
+      id: '/intrebari-frecvente'
+      path: '/intrebari-frecvente'
+      fullPath: '/intrebari-frecvente'
+      preLoaderRoute: typeof IntrebariFrecventeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/servicii/': {
+      id: '/servicii/'
+      path: '/servicii'
+      fullPath: '/servicii/'
+      preLoaderRoute: typeof ServiciiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/servicii/$slug': {
+      id: '/servicii/$slug'
+      path: '/servicii/$slug'
+      fullPath: '/servicii/$slug'
+      preLoaderRoute: typeof ServiciiSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zone/': {
+      id: '/zone/'
+      path: '/zone'
+      fullPath: '/zone/'
+      preLoaderRoute: typeof ZoneIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zone/$slug': {
+      id: '/zone/$slug'
+      path: '/zone/$slug'
+      fullPath: '/zone/$slug'
+      preLoaderRoute: typeof ZoneSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContactRoute: ContactRoute,
+  IntrebariFrecventeRoute: IntrebariFrecventeRoute,
+  ServiciiSlugRoute: ServiciiSlugRoute,
+  ZoneSlugRoute: ZoneSlugRoute,
+  ServiciiIndexRoute: ServiciiIndexRoute,
+  ZoneIndexRoute: ZoneIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

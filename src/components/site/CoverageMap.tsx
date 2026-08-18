@@ -303,7 +303,7 @@ export default function CoverageMap() {
             url={dark ? layer.dark : layer.light}
             subdomains={layer.subdomains as unknown as string[]}
           />
-          <ScaleControl position="topleft" imperial={false} />
+          <ScaleControl position="bottomleft" imperial={false} />
 
           {showRoutes &&
             filtered.map((z) => (
@@ -406,7 +406,7 @@ export default function CoverageMap() {
           className="pointer-events-none absolute inset-x-0 top-0 z-[600] flex items-center gap-2 p-3"
           style={{ paddingTop: fullscreen ? "max(0.75rem, env(safe-area-inset-top))" : undefined }}
         >
-          <span className="pointer-events-none inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
+          <span className={`pointer-events-none ${searchOpen ? "hidden sm:inline-flex" : "inline-flex"} shrink-0 whitespace-nowrap items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur`}>
             <span className="vm-live" /> Acoperire live
           </span>
 
@@ -453,7 +453,7 @@ export default function CoverageMap() {
         </div>
 
         {/* ==== FAB-uri verticale (thumb zone) ==== */}
-        <div className="absolute right-3 top-1/2 z-[600] flex -translate-y-[62%] flex-col gap-2 sm:-translate-y-1/2">
+        <div className="absolute right-3 top-16 z-[600] flex flex-col gap-2">
           {fabs.map((f) => (
             <button
               key={f.key}
@@ -469,7 +469,7 @@ export default function CoverageMap() {
 
         {/* ==== Panou straturi ==== */}
         {layersOpen && (
-          <div className="absolute right-16 top-1/2 z-[650] w-52 -translate-y-1/2 rounded-2xl border border-white/15 bg-black/80 p-2 text-white shadow-2xl backdrop-blur-xl">
+          <div className="absolute right-16 top-16 z-[650] w-52 rounded-2xl border border-white/15 bg-black/80 p-2 text-white shadow-2xl backdrop-blur-xl">
             <p className="px-2 pb-1 text-[10px] uppercase tracking-wide opacity-60">Stil hartă</p>
             {(Object.keys(TILE_LAYERS) as TileKey[]).map((k) => (
               <button
@@ -511,7 +511,7 @@ export default function CoverageMap() {
 
         {/* ==== Toast-uri ==== */}
         {(picking || geoError) && (
-          <div className="pointer-events-none absolute left-1/2 top-16 z-[650] w-max max-w-[80%] -translate-x-1/2 rounded-full border border-white/15 bg-black/75 px-3.5 py-2 text-center text-xs font-semibold text-white backdrop-blur">
+          <div className="pointer-events-none absolute left-1/2 top-28 z-[650] w-max max-w-[80%] -translate-x-1/2 rounded-full border border-white/15 bg-black/75 px-3.5 py-2 text-center text-xs font-semibold text-white backdrop-blur">
             {geoError ?? "Atinge harta ca să marchezi locația ta"}
           </div>
         )}

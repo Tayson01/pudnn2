@@ -487,3 +487,12 @@
     animation: none;
   }
 }
+
+.vm-map .leaflet-control-scale {
+  display: none;
+}
+@media (min-width: 640px) {
+  .vm-map .leaflet-control-scale {
+    display: block;
+  }
+}

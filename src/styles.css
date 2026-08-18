@@ -261,8 +261,8 @@
 .vm-base {
   position: relative;
   display: block;
-  height: 24px;
-  width: 24px;
+  height: 28px;
+  width: 28px;
 }
 .vm-base-dot,
 .vm-base-pulse {

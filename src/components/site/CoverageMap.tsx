@@ -124,11 +124,21 @@ function MapApi({ onReady }: { onReady: (m: L.Map) => void }) {
   useEffect(() => {
     onReady(map);
     map.scrollWheelZoom.disable();
+    const fix = () => map.invalidateSize({ animate: false });
+    const t1 = setTimeout(fix, 120);
+    const t2 = setTimeout(fix, 600);
+    const ro = new ResizeObserver(fix);
+    ro.observe(map.getContainer());
+    window.addEventListener("orientationchange", fix);
     const enable = () => map.scrollWheelZoom.enable();
     const disable = () => map.scrollWheelZoom.disable();
     map.on("click", enable);
     map.on("mouseout", disable);
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      ro.disconnect();
+      window.removeEventListener("orientationchange", fix);
       map.off("click", enable);
       map.off("mouseout", disable);
     };

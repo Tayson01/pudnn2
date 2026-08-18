@@ -53,7 +53,7 @@ export function ContactForm({ defaultZone }: { defaultZone?: string }) {
   }
 
   const field =
-    "mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-brand";
+    "mt-1.5 min-h-13 w-full rounded-2xl border border-border bg-background px-4 py-3.5 text-base outline-none transition-colors focus:border-brand focus:ring-4 focus:ring-brand/12 sm:text-sm";
 
   return (
     <form
@@ -61,9 +61,9 @@ export function ContactForm({ defaultZone }: { defaultZone?: string }) {
         e.preventDefault();
         sendWithLocation();
       }}
-      className="rounded-3xl border border-border bg-card p-6 shadow-card"
+      className=""
     >
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3.5 sm:grid-cols-2">
         <label className="block text-xs font-semibold text-muted-foreground">
           Nume
           <input
@@ -106,17 +106,17 @@ export function ContactForm({ defaultZone }: { defaultZone?: string }) {
         />
       </label>
 
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-5 grid gap-2.5">
         <button
           type="submit"
-          className="inline-flex items-center gap-2 rounded-xl bg-success px-5 py-3 text-sm font-semibold text-brand-foreground transition-all hover:brightness-110"
+          className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-success px-5 text-base font-extrabold text-brand-foreground transition-all hover:brightness-110 active:scale-[0.98]"
         >
-          <MapPin className="size-4" /> Trimite cu locația
+          <MapPin className="size-5" /> Trimite cu locația
         </button>
         <button
           type="button"
           onClick={sendWithoutLocation}
-          className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-semibold hover:bg-surface"
+          className="inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl border border-border bg-card px-5 text-sm font-bold transition-colors hover:bg-surface active:scale-[0.98]"
         >
           <MessageCircle className="size-4" /> Trimite fără locație
         </button>

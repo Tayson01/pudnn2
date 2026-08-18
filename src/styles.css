@@ -261,8 +261,8 @@
 .vm-base {
   position: relative;
   display: block;
-  height: 24px;
-  width: 24px;
+  height: 28px;
+  width: 28px;
 }
 .vm-base-dot,
 .vm-base-pulse {
@@ -485,5 +485,14 @@
 @media (prefers-reduced-motion: reduce) {
   .vm-radar {
     animation: none;
+  }
+}
+
+.vm-map .leaflet-control-scale {
+  display: none;
+}
+@media (min-width: 640px) {
+  .vm-map .leaflet-control-scale {
+    display: block;
   }
 }

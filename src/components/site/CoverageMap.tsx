@@ -453,7 +453,7 @@ export default function CoverageMap() {
         </div>
 
         {/* ==== FAB-uri verticale (thumb zone) ==== */}
-        <div className="absolute right-3 top-1/2 z-[600] flex -translate-y-1/2 flex-col gap-2">
+        <div className="absolute right-3 top-1/2 z-[600] flex -translate-y-[62%] flex-col gap-2 sm:-translate-y-1/2">
           {fabs.map((f) => (
             <button
               key={f.key}
@@ -518,7 +518,7 @@ export default function CoverageMap() {
 
         {/* ==== BOTTOM SHEET ==== */}
         <div
-          className="absolute inset-x-0 bottom-0 z-[640] p-3"
+          className="absolute inset-x-0 bottom-0 z-[640] p-3 pb-20 sm:pb-3"
           style={{ paddingBottom: fullscreen ? "max(0.75rem, env(safe-area-inset-bottom))" : undefined }}
         >
           <div className="vm-sheet overflow-hidden rounded-3xl">

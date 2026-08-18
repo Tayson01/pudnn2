@@ -375,3 +375,45 @@
 @media (prefers-reduced-motion: reduce) {
   .animate-hero-pulse, .animate-hero-sweep, .animate-rise { animation: none !important; }
 }
+
+/* ===== Contact: card apel de urgență (mobile-first) ===== */
+.vm-call {
+  background:
+    radial-gradient(120% 90% at 85% -10%, color-mix(in oklab, #fff 26%, transparent), transparent 60%),
+    linear-gradient(155deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 62%, #000));
+  box-shadow: var(--shadow-glow);
+}
+.vm-live {
+  position: relative;
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+  border-radius: 999px;
+  background: var(--color-success, #16a34a);
+}
+.vm-live::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-success, #16a34a) 55%, transparent);
+  animation: vm-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.vm-callbtn {
+  animation: vm-breathe 2.6s ease-in-out infinite;
+}
+@keyframes vm-breathe {
+  0%,
+  100% {
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+  }
+  50% {
+    box-shadow: 0 14px 40px rgb(0 0 0 / 0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vm-callbtn,
+  .vm-live::after {
+    animation: none;
+  }
+}

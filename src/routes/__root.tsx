@@ -11,6 +11,11 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { Header } from "@/components/site/Header";
+import { Footer } from "@/components/site/Footer";
+import { BackToTop } from "@/components/site/BackToTop";
+import { MobileActionBar } from "@/components/site/MobileActionBar";
+import { themeInitScript } from "@/components/site/ThemeToggle";
 
 function NotFoundComponent() {
   return (
@@ -78,22 +83,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      {
+        name: "description",
+        content:
+          "A",
+      },
+      { property: "og:site_name", content: "Vulcanizare Mobilă Constanța" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { property: "og:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Lovable App" },
+      { property: "og:description", content: "A" },
+      { name: "twitter:description", content: "A" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/072d0f156155b1f667f7f1f0a0c90c2d/id-preview-9e040472--bd3bf328-d443-468f-b8e9-60065b556344.lovable.app-1787011830641.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/072d0f156155b1f667f7f1f0a0c90c2d/id-preview-9e040472--bd3bf328-d443-468f-b8e9-60065b556344.lovable.app-1787011830641.png" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -102,11 +112,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ro">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body>
+      <body className="bg-background font-sans text-foreground antialiased">
         {children}
         <Scripts />
       </body>
@@ -119,8 +130,17 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <div className="flex-1">
+          <Outlet />
+        </div>
+        <Footer />
+        <div className="h-20 lg:hidden" aria-hidden />
+        <BackToTop />
+        <MobileActionBar />
+      </div>
     </QueryClientProvider>
   );
 }

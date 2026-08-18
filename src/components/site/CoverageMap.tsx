@@ -11,20 +11,19 @@ import {
   ScaleControl,
   TileLayer,
   Tooltip,
-  ZoomControl,
   useMap,
   useMapEvents,
 } from "react-leaflet";
 import {
+  Check,
   Crosshair,
   Layers,
   Locate,
   Maximize2,
   Minimize2,
-  MousePointerClick,
+  MessageCircle,
+  Navigation,
   Phone,
-  Route as RouteIcon,
-  Ruler,
   Search,
   Target,
   X,
@@ -64,17 +63,17 @@ type TileKey = keyof typeof TILE_LAYERS;
 
 const baseIcon = L.divIcon({
   className: "",
-  html: `<span class="vm-base"><span class="vm-base-pulse"></span><span class="vm-base-dot"></span></span>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  html: `<span class="vm-base"><span class="vm-radar"></span><span class="vm-base-pulse"></span><span class="vm-base-dot"></span></span>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
 });
 
 const pinIcon = (color: string) =>
   L.divIcon({
     className: "",
     html: `<span class="vm-pin" style="--vm-pin:${color}"><span class="vm-pin-dot"></span></span>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
   });
 
 const userIcon = pinIcon("#16a34a");
@@ -108,18 +107,13 @@ function etaFor(km: number) {
 function MapEvents({
   picking,
   onPick,
-  onZoom,
 }: {
   picking: boolean;
   onPick: (p: LatLngTuple) => void;
-  onZoom: (z: number) => void;
 }) {
   useMapEvents({
     click(e) {
       if (picking) onPick([e.latlng.lat, e.latlng.lng]);
-    },
-    zoomend(e) {
-      onZoom(e.target.getZoom());
     },
   });
   return null;
@@ -129,7 +123,6 @@ function MapApi({ onReady }: { onReady: (m: L.Map) => void }) {
   const map = useMap();
   useEffect(() => {
     onReady(map);
-    // harta se activează la click (evită scroll-jacking)
     map.scrollWheelZoom.disable();
     const enable = () => map.scrollWheelZoom.enable();
     const disable = () => map.scrollWheelZoom.disable();
@@ -145,14 +138,14 @@ function MapApi({ onReady }: { onReady: (m: L.Map) => void }) {
 
 export default function CoverageMap() {
   const dark = useIsDark();
-  const wrapRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
 
   const [tiles, setTiles] = useState<TileKey>("street");
   const [showRings, setShowRings] = useState(true);
   const [showRoutes, setShowRoutes] = useState(true);
-  const [showLabels, setShowLabels] = useState(true);
+  const [showLabels, setShowLabels] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
@@ -160,7 +153,6 @@ export default function CoverageMap() {
   const [user, setUser] = useState<LatLngTuple | null>(null);
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(9);
   const [fullscreen, setFullscreen] = useState(false);
 
   const layer = TILE_LAYERS[tiles];
@@ -183,8 +175,9 @@ export default function CoverageMap() {
   const fitAll = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.flyToBounds(L.latLngBounds([BASE, ...zones.map((z) => z.coords)]).pad(0.25), {
+    map.flyToBounds(L.latLngBounds([BASE, ...zones.map((z) => z.coords)]).pad(0.2), {
       duration: 0.9,
+      paddingBottomRight: [0, 140],
     });
     setActive(null);
   }, []);
@@ -200,6 +193,7 @@ export default function CoverageMap() {
       (pos) => {
         const p: LatLngTuple = [pos.coords.latitude, pos.coords.longitude];
         setUser(p);
+        setPick(null);
         setLocating(false);
         flyTo(p, 12);
       },
@@ -211,12 +205,14 @@ export default function CoverageMap() {
     );
   }, [flyTo]);
 
-  const toggleFullscreen = useCallback(() => {
-    setFullscreen((f) => !f);
-  }, []);
+  useEffect(() => {
+    if (!geoError) return;
+    const t = setTimeout(() => setGeoError(null), 4500);
+    return () => clearTimeout(t);
+  }, [geoError]);
 
   useEffect(() => {
-    const t = setTimeout(() => mapRef.current?.invalidateSize(), 260);
+    const t = setTimeout(() => mapRef.current?.invalidateSize(), 280);
     return () => clearTimeout(t);
   }, [fullscreen]);
 
@@ -225,23 +221,70 @@ export default function CoverageMap() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setFullscreen(false);
     };
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
   }, [fullscreen]);
 
   const measured = pick ?? user;
   const measuredKm = measured ? distanceKm(BASE, measured) : null;
+  const measuredLabel = pick ? "Punct ales pe hartă" : "Locația ta GPS";
+  const waHref = measured
+    ? waLink(
+        `Bună ziua! Am nevoie de vulcanizare mobilă la locația: https://maps.google.com/?q=${measured[0].toFixed(5)},${measured[1].toFixed(5)}`,
+      )
+    : waLink("Bună ziua! Am nevoie de vulcanizare mobilă.");
+
+  const fabs = [
+    {
+      key: "locate",
+      icon: <Locate className={`size-5 ${locating ? "animate-spin" : ""}`} />,
+      label: "Localizează-mă",
+      on: !!user,
+      action: locate,
+    },
+    {
+      key: "pick",
+      icon: <Crosshair className="size-5" />,
+      label: "Alege punct",
+      on: picking,
+      action: () => setPicking((p) => !p),
+    },
+    {
+      key: "fit",
+      icon: <Target className="size-5" />,
+      label: "Toată acoperirea",
+      on: false,
+      action: fitAll,
+    },
+    {
+      key: "layers",
+      icon: <Layers className="size-5" />,
+      label: "Straturi",
+      on: layersOpen,
+      action: () => setLayersOpen((o) => !o),
+    },
+    {
+      key: "full",
+      icon: fullscreen ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />,
+      label: "Ecran complet",
+      on: fullscreen,
+      action: () => setFullscreen((f) => !f),
+    },
+  ];
 
   return (
     <div
-      ref={wrapRef}
       className={
         fullscreen
-          ? "fixed inset-0 z-[9999] bg-background p-3 sm:p-5"
-          : "relative h-[540px] w-full"
+          ? "fixed inset-0 z-[9999] bg-background"
+          : "relative h-[68svh] min-h-[460px] w-full sm:h-[560px]"
       }
     >
-      <div className="relative h-full w-full overflow-hidden rounded-2xl">
+      <div className="relative h-full w-full overflow-hidden sm:rounded-2xl">
         <MapContainer
           center={BASE}
           zoom={9}
@@ -249,19 +292,19 @@ export default function CoverageMap() {
           maxZoom={17}
           scrollWheelZoom={false}
           zoomControl={false}
+          attributionControl={false}
           className="vm-map h-full w-full"
           style={{ background: "transparent" }}
         >
           <MapApi onReady={(m) => (mapRef.current = m)} />
-          <MapEvents picking={picking} onPick={setPick} onZoom={setZoom} />
+          <MapEvents picking={picking} onPick={(p) => { setPick(p); setPicking(false); }} />
           <TileLayer
             key={tiles + (dark ? "-d" : "-l")}
             attribution={layer.attribution}
             url={dark ? layer.dark : layer.light}
             subdomains={layer.subdomains as unknown as string[]}
           />
-          <ZoomControl position="bottomright" />
-          <ScaleControl position="bottomleft" imperial={false} />
+          <ScaleControl position="topleft" imperial={false} />
 
           {showRoutes &&
             filtered.map((z) => (
@@ -270,8 +313,8 @@ export default function CoverageMap() {
                 positions={[BASE, z.coords]}
                 pathOptions={{
                   color: "#2563eb",
-                  weight: active === z.slug ? 2.6 : 1.2,
-                  opacity: active === z.slug ? 0.9 : 0.32,
+                  weight: active === z.slug ? 3 : 1.2,
+                  opacity: active === z.slug ? 0.95 : 0.28,
                   dashArray: active === z.slug ? undefined : "4 8",
                 }}
               />
@@ -291,17 +334,10 @@ export default function CoverageMap() {
                   fillColor: "#2563eb",
                   fillOpacity: 0.05 + i * 0.03,
                 }}
-              >
-                <Tooltip direction="top" className="vm-tip">{`${ring.minutes} — rază ${ring.km} km`}</Tooltip>
-              </Circle>
+              />
             ))}
 
           <Marker position={BASE} icon={baseIcon} zIndexOffset={1000}>
-            {showLabels && (
-              <Tooltip permanent direction="top" offset={[0, -14]} className="vm-tip vm-tip-strong">
-                Baza noastră · Constanța
-              </Tooltip>
-            )}
             <Popup className="vm-popup">
               <span className="block text-[13px] font-extrabold">Bază operațională</span>
               <span className="mt-1 block text-[12px] opacity-70">Șos. Mangaliei 126 B, Constanța</span>
@@ -312,10 +348,8 @@ export default function CoverageMap() {
             <CircleMarker
               key={z.slug}
               center={z.coords}
-              radius={active === z.slug ? 10 : 7}
-              eventHandlers={{
-                click: () => setActive(z.slug),
-              }}
+              radius={active === z.slug ? 11 : 8}
+              eventHandlers={{ click: () => setActive(z.slug) }}
               pathOptions={{
                 color: "#ffffff",
                 weight: 2.5,
@@ -329,8 +363,7 @@ export default function CoverageMap() {
                 <span className="mt-1 block text-[12px] opacity-70">
                   Sosire estimată: {z.etaMinutes} · {distanceKm(BASE, z.coords).toFixed(1)} km
                 </span>
-                <span className="mt-1 block text-[11px] opacity-60">{z.roads.slice(0, 3).join(" · ")}</span>
-                <span className="mt-2 flex gap-2">
+                <span className="mt-2 flex gap-3">
                   <a href={`/zone/${z.slug}`} className="text-[12px] font-bold text-blue-600">
                     Detalii →
                   </a>
@@ -347,240 +380,250 @@ export default function CoverageMap() {
 
           {user && (
             <>
-              <Marker position={user} icon={userIcon} zIndexOffset={900}>
-                <Tooltip direction="top" className="vm-tip vm-tip-strong">
-                  Locația ta
-                </Tooltip>
-              </Marker>
+              <Marker position={user} icon={userIcon} zIndexOffset={900} />
               <Polyline
                 positions={[BASE, user]}
-                pathOptions={{ color: "#16a34a", weight: 2.4, opacity: 0.85, dashArray: "2 7" }}
+                pathOptions={{ color: "#16a34a", weight: 2.6, opacity: 0.9, dashArray: "2 7" }}
               />
             </>
           )}
 
           {pick && (
             <>
-              <Marker position={pick} icon={pickIcon} zIndexOffset={900}>
-                <Popup className="vm-popup">
-                  <span className="block text-[13px] font-extrabold">Punct selectat</span>
-                  <span className="mt-1 block text-[12px] opacity-70">
-                    {distanceKm(BASE, pick).toFixed(1)} km · {etaFor(distanceKm(BASE, pick))}
-                  </span>
-                  <a
-                    href={waLink(
-                      `Bună ziua! Am nevoie de vulcanizare mobilă la locația: https://maps.google.com/?q=${pick[0].toFixed(5)},${pick[1].toFixed(5)}`,
-                    )}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-block text-[12px] font-bold text-green-600"
-                  >
-                    Trimite locația pe WhatsApp →
-                  </a>
-                </Popup>
-              </Marker>
+              <Marker position={pick} icon={pickIcon} zIndexOffset={900} />
               <Polyline
                 positions={[BASE, pick]}
-                pathOptions={{ color: "#f59e0b", weight: 2.4, opacity: 0.9, dashArray: "2 7" }}
+                pathOptions={{ color: "#f59e0b", weight: 2.6, opacity: 0.9, dashArray: "2 7" }}
               />
             </>
           )}
         </MapContainer>
 
-        {/* ==== BARA DE SUS: căutare + acțiuni ==== */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[600] flex flex-wrap items-start gap-2 p-3">
-          <div className="pointer-events-auto flex min-w-[150px] flex-1 items-center gap-2 rounded-full border border-white/15 bg-black/60 px-3 py-2 text-white backdrop-blur">
-            <Search className="size-3.5 shrink-0 opacity-70" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Caută localitate sau drum…"
-              className="w-full bg-transparent text-xs font-medium outline-none placeholder:text-white/50"
-            />
-            {query && (
-              <button onClick={() => setQuery("")} aria-label="Șterge căutarea">
-                <X className="size-3.5 opacity-70 hover:opacity-100" />
+        {/* ==== Vignette / gradient overlays ==== */}
+        <div className="pointer-events-none absolute inset-0 z-[500] vm-vignette" />
+
+        {/* ==== BARA DE SUS ==== */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-[600] flex items-center gap-2 p-3"
+          style={{ paddingTop: fullscreen ? "max(0.75rem, env(safe-area-inset-top))" : undefined }}
+        >
+          <span className="pointer-events-none inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/55 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white backdrop-blur">
+            <span className="vm-live" /> Acoperire live
+          </span>
+
+          <div className="ml-auto flex items-center gap-2">
+            {searchOpen ? (
+              <div className="pointer-events-auto flex w-[62vw] max-w-[320px] items-center gap-2 rounded-full border border-white/15 bg-black/65 px-3 py-2 text-white backdrop-blur">
+                <Search className="size-4 shrink-0 opacity-70" />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Localitate sau drum…"
+                  className="w-full bg-transparent text-sm font-medium outline-none placeholder:text-white/50"
+                />
+                <button
+                  onClick={() => {
+                    setQuery("");
+                    setSearchOpen(false);
+                  }}
+                  aria-label="Închide căutarea"
+                >
+                  <X className="size-4 opacity-80" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="vm-fab pointer-events-auto"
+                aria-label="Caută localitate"
+              >
+                <Search className="size-5" />
+              </button>
+            )}
+            {fullscreen && (
+              <button
+                onClick={() => setFullscreen(false)}
+                className="vm-fab pointer-events-auto"
+                aria-label="Închide ecranul complet"
+              >
+                <X className="size-5" />
               </button>
             )}
           </div>
+        </div>
 
-          <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-1.5">
+        {/* ==== FAB-uri verticale (thumb zone) ==== */}
+        <div className="absolute right-3 top-1/2 z-[600] flex -translate-y-1/2 flex-col gap-2">
+          {fabs.map((f) => (
             <button
-              onClick={locate}
-              className="vm-ctrl"
-              title="Localizează-mă"
-              aria-label="Localizează-mă"
+              key={f.key}
+              onClick={f.action}
+              aria-label={f.label}
+              title={f.label}
+              className={`vm-fab ${f.on ? "vm-fab-on" : ""}`}
             >
-              <Locate className={`size-3.5 ${locating ? "animate-spin" : ""}`} />
+              {f.icon}
             </button>
-            <button
-              onClick={() => setPicking((p) => !p)}
-              className={`vm-ctrl ${picking ? "vm-ctrl-on" : ""}`}
-              title="Alege punct pe hartă"
-              aria-label="Alege punct pe hartă"
-            >
-              <Crosshair className="size-3.5" />
-            </button>
-            <button onClick={fitAll} className="vm-ctrl" title="Vezi toată acoperirea" aria-label="Vezi toată acoperirea">
-              <Target className="size-3.5" />
-            </button>
-            <div className="relative">
+          ))}
+        </div>
+
+        {/* ==== Panou straturi ==== */}
+        {layersOpen && (
+          <div className="absolute right-16 top-1/2 z-[650] w-52 -translate-y-1/2 rounded-2xl border border-white/15 bg-black/80 p-2 text-white shadow-2xl backdrop-blur-xl">
+            <p className="px-2 pb-1 text-[10px] uppercase tracking-wide opacity-60">Stil hartă</p>
+            {(Object.keys(TILE_LAYERS) as TileKey[]).map((k) => (
               <button
-                onClick={() => setLayersOpen((o) => !o)}
-                className={`vm-ctrl ${layersOpen ? "vm-ctrl-on" : ""}`}
-                title="Straturi"
-                aria-label="Straturi"
+                key={k}
+                onClick={() => setTiles(k)}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-white/10 ${
+                  tiles === k ? "bg-white/15" : ""
+                }`}
               >
-                <Layers className="size-3.5" />
+                {TILE_LAYERS[k].label}
+                {tiles === k && <Check className="size-4" />}
               </button>
-              {layersOpen && (
-                <div className="absolute right-0 top-10 w-48 rounded-2xl border border-white/15 bg-black/80 p-2 text-white backdrop-blur">
-                  <p className="px-2 pb-1 text-[10px] uppercase tracking-wide opacity-60">Hartă</p>
-                  {(Object.keys(TILE_LAYERS) as TileKey[]).map((k) => (
-                    <button
-                      key={k}
-                      onClick={() => setTiles(k)}
-                      className={`flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-xs font-semibold hover:bg-white/10 ${
-                        tiles === k ? "bg-white/15" : ""
+            ))}
+            <p className="mt-2 px-2 pb-1 text-[10px] uppercase tracking-wide opacity-60">Suprapuneri</p>
+            {[
+              { label: "Cercuri ETA", v: showRings, set: setShowRings },
+              { label: "Trasee", v: showRoutes, set: setShowRoutes },
+              { label: "Etichete", v: showLabels, set: setShowLabels },
+            ].map((o) => (
+              <button
+                key={o.label}
+                onClick={() => o.set(!o.v)}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-white/10"
+              >
+                {o.label}
+                <span
+                  className={`h-5 w-9 rounded-full p-0.5 transition-colors ${o.v ? "bg-brand" : "bg-white/25"}`}
+                >
+                  <span
+                    className={`block size-4 rounded-full bg-white transition-transform ${
+                      o.v ? "translate-x-4" : ""
+                    }`}
+                  />
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ==== Toast-uri ==== */}
+        {(picking || geoError) && (
+          <div className="pointer-events-none absolute left-1/2 top-16 z-[650] w-max max-w-[80%] -translate-x-1/2 rounded-full border border-white/15 bg-black/75 px-3.5 py-2 text-center text-xs font-semibold text-white backdrop-blur">
+            {geoError ?? "Atinge harta ca să marchezi locația ta"}
+          </div>
+        )}
+
+        {/* ==== BOTTOM SHEET ==== */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-[640] p-3"
+          style={{ paddingBottom: fullscreen ? "max(0.75rem, env(safe-area-inset-bottom))" : undefined }}
+        >
+          <div className="vm-sheet overflow-hidden rounded-3xl">
+            {measuredKm !== null ? (
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-white/60">
+                      {measuredLabel}
+                    </p>
+                    <p className="mt-1 flex items-baseline gap-2 text-white">
+                      <span className="text-3xl font-extrabold leading-none tabular-nums">
+                        {measuredKm.toFixed(1)} km
+                      </span>
+                      <span className="text-sm font-semibold text-white/70">
+                        ≈ {etaFor(measuredKm)}
+                      </span>
+                    </p>
+                    <p
+                      className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                        measuredKm <= 50
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-amber-500/20 text-amber-300"
                       }`}
                     >
-                      {TILE_LAYERS[k].label}
-                      {tiles === k && <span className="size-1.5 rounded-full bg-white" />}
-                    </button>
-                  ))}
-                  <p className="mt-2 px-2 pb-1 text-[10px] uppercase tracking-wide opacity-60">Suprapuneri</p>
-                  {[
-                    { label: "Cercuri ETA", v: showRings, set: setShowRings },
-                    { label: "Trasee", v: showRoutes, set: setShowRoutes },
-                    { label: "Etichete", v: showLabels, set: setShowLabels },
-                  ].map((o) => (
+                      {measuredKm <= 50 ? "În zona de acoperire" : "În afara razei standard"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPick(null);
+                      setUser(null);
+                    }}
+                    className="rounded-full border border-white/20 p-2 text-white/80"
+                    aria-label="Resetează"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <a
+                    href={`tel:${TEL}`}
+                    className="inline-flex h-13 min-h-13 items-center justify-center gap-2 rounded-2xl bg-brand text-sm font-extrabold text-white"
+                  >
+                    <Phone className="size-4" /> Sună acum
+                  </a>
+                  <a
+                    href={waHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-13 min-h-13 items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-sm font-extrabold text-white"
+                  >
+                    <MessageCircle className="size-4" /> Trimite locația
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3">
+                <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {filtered.map((z) => (
                     <button
-                      key={o.label}
-                      onClick={() => o.set(!o.v)}
-                      className="flex w-full items-center justify-between rounded-xl px-2 py-1.5 text-xs font-semibold hover:bg-white/10"
+                      key={z.slug}
+                      onClick={() => {
+                        setActive(z.slug);
+                        flyTo(z.coords, 12);
+                      }}
+                      className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition-colors ${
+                        active === z.slug
+                          ? "border-transparent bg-brand text-white"
+                          : "border-white/15 bg-white/10 text-white"
+                      }`}
                     >
-                      {o.label}
-                      <span
-                        className={`h-3.5 w-6 rounded-full transition-colors ${o.v ? "bg-brand" : "bg-white/25"}`}
-                      >
-                        <span
-                          className={`block size-3 translate-y-[1px] rounded-full bg-white transition-transform ${
-                            o.v ? "translate-x-[11px]" : "translate-x-[2px]"
-                          }`}
-                        />
+                      <span className="block text-[13px] font-bold leading-tight">{z.short ?? z.name}</span>
+                      <span className="mt-0.5 block text-[11px] opacity-70">
+                        {z.etaMinutes} · {distanceKm(BASE, z.coords).toFixed(0)} km
                       </span>
                     </button>
                   ))}
+                  {filtered.length === 0 && (
+                    <span className="px-2 py-3 text-xs text-white/70">
+                      Nicio potrivire — sună-ne oricum, deservim tot județul.
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
-            <button
-              onClick={toggleFullscreen}
-              className="vm-ctrl"
-              title={fullscreen ? "Ieși din ecran complet" : "Ecran complet"}
-              aria-label="Ecran complet"
-            >
-              {fullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
-            </button>
-          </div>
-        </div>
 
-        {/* ==== HINT MOD SELECTARE ==== */}
-        {picking && (
-          <div className="pointer-events-none absolute left-1/2 top-16 z-[600] -translate-x-1/2 rounded-full border border-white/15 bg-black/70 px-3 py-1.5 text-[11px] font-semibold text-white backdrop-blur">
-            <MousePointerClick className="mr-1 inline size-3.5" /> Dă click pe hartă pentru a marca locația
-          </div>
-        )}
-        {geoError && (
-          <div className="absolute left-1/2 top-16 z-[600] -translate-x-1/2 rounded-full border border-red-400/30 bg-red-500/85 px-3 py-1.5 text-[11px] font-semibold text-white">
-            {geoError}
-          </div>
-        )}
-
-        {/* ==== PANOU DISTANȚĂ / ETA ==== */}
-        {measuredKm !== null && (
-          <div className="absolute left-3 top-16 z-[600] w-[210px] rounded-2xl border border-white/15 bg-black/70 p-3 text-white backdrop-blur">
-            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide opacity-70">
-              <Ruler className="size-3.5" /> Estimare intervenție
-            </p>
-            <p className="mt-1.5 text-2xl font-extrabold leading-none">{measuredKm.toFixed(1)} km</p>
-            <p className="mt-1 text-xs opacity-80">Sosire ≈ {etaFor(measuredKm)}</p>
-            <p className="mt-1 text-[11px] opacity-60">
-              {measuredKm <= 50 ? "În zona de acoperire ✓" : "În afara razei standard — te sunăm cu ofertă"}
-            </p>
-            <div className="mt-2 flex gap-2">
-              <a
-                href={`tel:${TEL}`}
-                className="flex-1 rounded-full bg-brand px-2 py-1.5 text-center text-[11px] font-bold"
-              >
-                Sună acum
-              </a>
-              <button
-                onClick={() => {
-                  setPick(null);
-                  setUser(null);
-                }}
-                className="rounded-full border border-white/20 px-2 py-1.5 text-[11px] font-semibold"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ==== CTA TELEFON ==== */}
-        <a
-          href={`tel:${TEL}`}
-          className="absolute bottom-14 left-3 z-[600] inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-2 text-xs font-bold text-white shadow-lg transition-transform hover:scale-105"
-        >
-          <Phone className="size-3.5" /> Cere intervenție
-        </a>
-
-        {/* ==== LEGENDĂ + ZOOM ==== */}
-        <div className="pointer-events-none absolute bottom-3 left-1/2 z-[600] flex -translate-x-1/2 flex-wrap justify-center gap-1.5">
-          {mapRings.map((r, i) => (
-            <span
-              key={r.km}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur"
-            >
-              <span
-                className="size-2 rounded-full bg-brand"
-                style={{ opacity: 1 - i * 0.28 }}
-              />
-              {r.minutes} · {r.km} km
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
-            <RouteIcon className="size-3" /> zoom {zoom}
-          </span>
-        </div>
-
-        {/* ==== LISTĂ ZONE FILTRATE ==== */}
-        <div className="absolute right-3 top-16 z-[600] hidden w-[184px] overflow-hidden rounded-2xl border border-white/15 bg-black/65 text-white backdrop-blur sm:block">
-          <p className="border-b border-white/10 px-3 py-2 text-[10px] uppercase tracking-wide opacity-60">
-            {filtered.length} zone
-          </p>
-          <ul className="max-h-[220px] overflow-y-auto p-1.5">
-            {filtered.map((z) => (
-              <li key={z.slug}>
-                <button
-                  onClick={() => {
-                    setActive(z.slug);
-                    flyTo(z.coords, 12);
-                  }}
-                  className={`flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-left text-[11px] font-semibold hover:bg-white/10 ${
-                    active === z.slug ? "bg-white/15" : ""
-                  }`}
-                >
-                  <span className="truncate">{z.name}</span>
-                  <span className="shrink-0 opacity-60">{distanceKm(BASE, z.coords).toFixed(0)} km</span>
-                </button>
-              </li>
-            ))}
-            {filtered.length === 0 && (
-              <li className="px-2 py-2 text-[11px] opacity-70">Nicio potrivire. Sună-ne oricum.</li>
+                <div className="mt-2 grid grid-cols-[1.2fr_1fr] gap-2">
+                  <button
+                    onClick={locate}
+                    className="inline-flex h-13 min-h-13 items-center justify-center gap-2 rounded-2xl bg-brand text-sm font-extrabold text-white"
+                  >
+                    <Navigation className={`size-4 ${locating ? "animate-spin" : ""}`} />
+                    {locating ? "Te caut…" : "Calculează ETA"}
+                  </button>
+                  <a
+                    href={`tel:${TEL}`}
+                    className="inline-flex h-13 min-h-13 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 text-sm font-extrabold text-white"
+                  >
+                    <Phone className="size-4" /> Sună
+                  </a>
+                </div>
+              </div>
             )}
-          </ul>
+          </div>
         </div>
       </div>
     </div>
